@@ -1,19 +1,5 @@
 # This Python file uses the following encoding: utf-8
 
-# Implementation of the Pumpistor model of a flux pumped SQUID in the
-# three wave mixing degenerate case ω_p = ω_s + ω_i and ω_p = ω_s.
-#
-# Based on an article from K. M. Sundqvist et al:
-# "The pumpistor: A linearized model of a flux-pumped superconducting
-# quantum interference device for use as a negative-resistance parametric
-# amplifier"
-# APL 109 102603 (2013),
-# and on an article from J. Y. Mutus et al:
-# "Design and characterization of a lumped element single-ended
-# superconducting microwave parametric amplifier with on-chip
-# flux bias line"
-# APL 103 122602 (2013)
-
 # Copyright (C) 2016 Dumur Étienne
 # etienne.dumur@gmail.com
 
@@ -35,7 +21,7 @@
 import numpy as np
 import scipy.constants as cst
 from scipy.integrate import quad
-
+from scipy.special import eval_legendre
 
 class Transducer(object):
 
@@ -181,52 +167,6 @@ class Transducer(object):
 
 
 
-    def legendre_function(self, nu, cosdelta):
-        """
-        Return the Legendre function P_nu(cosdelta).
-
-        Parameters
-        ----------
-        nu : float, np.ndarray
-            Order
-        cosdelta : float
-            parameter
-            As defined in the Morgan this method expect the cosinus of the
-            delta value, not the delta value itself.
-        """
-
-        delta = np.arccos(cosdelta)
-
-        if delta < 0 or delta > np.pi:
-            raise ValueError('pi*finger_width/finger_pitch must be comprised between 0 and pi.')
-
-        def integrand(phi, nu, delta):
-            """
-                Integrand used in the scipy quad function.
-            """
-
-            return np.cos((nu + 1./2.)*phi)\
-                  /np.sqrt(np.cos(phi) - cosdelta)
-
-        # If nu is a list we make a loop along all its values and return the
-        # result as an array
-        if type(nu) is np.ndarray:
-
-            temp = []
-            for i in nu:
-                a = quad(integrand,
-                         -abs(delta), abs(delta), args=(i, delta))[0]
-                temp.append(a)
-
-            return np.array(temp)/np.pi/np.sqrt(2.)
-        # if nu is a float, we just have to return the function
-        else:
-            return quad(integrand,
-                       -abs(delta), abs(delta), args=(nu, delta))[0]\
-                   /np.pi/np.sqrt(2.)
-
-
-
     def center_angular_frequency(self):
         """
         Return the central response frequency of the IDT in rad.Hz.
@@ -249,7 +189,7 @@ class Transducer(object):
         return self.alpha(M)*M*self.center_angular_frequency()\
                *(self.nb_finger/2.)**2.*self.transducer_width*self.gamma_s()\
                *(2.*self.epsilon_inf()*np.sin(np.pi*M/self.Se)\
-               /self.legendre_function(-M/self.Se, -np.cos(self.delta())))**2.
+               /eval_legendre(-M/self.Se, -np.cos(self.delta())))**2.
 
 
 
@@ -314,8 +254,8 @@ class Transducer(object):
 
         return self.gamma()*self.transducer_width*self.nb_finger/2.\
                *self.epsilon_inf()*np.sin(np.pi/self.Se)\
-               *self.legendre_function(-1./self.Se, np.cos(self.delta()))\
-               /self.legendre_function(-1./self.Se, -np.cos(self.delta()))
+               *eval_legendre(-1./self.Se, np.cos(self.delta()))\
+               /eval_legendre(-1./self.Se, -np.cos(self.delta()))
 
 
 
@@ -390,7 +330,7 @@ class Transducer(object):
             def integrand(s, theta, delta):
 
                 return np.sin(np.pi*s)*np.cos((s - 1./2.)*theta)\
-                       /self.legendre_function(-s, -np.cos(delta))
+                       /eval_legendre(-s, -np.cos(delta))
 
             return quad(integrand, 0., 1., args=(theta, delta))[0]
 
