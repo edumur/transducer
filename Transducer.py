@@ -409,7 +409,6 @@ class Transducer(object):
         # electrode
         rho_e = np.zeros_like(rho_f)
         for i in range(nb_finger):
-            print i
             rho_e += np.roll(rho_f, int(len(rho_f)/nb_finger*i))
 
         # When no electrode the calculation return 0.
